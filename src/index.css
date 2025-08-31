@@ -1,0 +1,13 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* App theming */
+:root {
+  --brand: #0ea5e9;
+}
+.glass {
+  backdrop-filter: blur(8px);
+  background: rgba(255,255,255,0.7);
+}

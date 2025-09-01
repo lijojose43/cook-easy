@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react'
+import { chipColorClasses } from '../lib/colors'
 import { PREFILLED_INGREDIENTS } from '../lib/ingredients'
 import { loadMixes, saveMixes } from '../lib/storage'
 
@@ -119,8 +120,8 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/10 grid place-items-center p-4" onClick={onClose}>
-      <div className="w-full max-w-2xl rounded-2xl glass shadow-soft border border-slate-200" onClick={(e)=>e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 grid place-items-center p-4" onClick={onClose}>
+      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-soft border border-slate-200" onClick={(e)=>e.stopPropagation()}>
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <h3 className="text-lg font-semibold">Add Recipe</h3>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-700">✕</button>
@@ -148,9 +149,9 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
             <label className="text-sm font-medium">Ingredients</label>
             <div className="flex flex-wrap gap-2">
               {ingredients.map(ing => (
-                <span key={ing} className="text-xs px-2 py-1 rounded-full bg-orange-50 text-orange-800 border border-orange-200">
+                <span key={ing} className={`text-xs px-2 py-1 rounded-full border inline-flex items-center gap-1 ${chipColorClasses(ing)}`}>
                   {ing}
-                  <button type="button" onClick={()=>removeIngredient(ing)} className="ml-1">✕</button>
+                  <button type="button" onClick={()=>removeIngredient(ing)} className="ml-1 text-white/90 hover:text-white">✕</button>
                 </span>
               ))}
             </div>

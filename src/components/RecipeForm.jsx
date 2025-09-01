@@ -18,6 +18,7 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
   const [mixItems, setMixItems] = useState('') // comma separated
 
   const fileRef = useRef()
+  const descRef = useRef()
 
   // hydrate when editing
   useEffect(() => {
@@ -53,6 +54,25 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
     const id = recipeId || crypto.randomUUID()
     onSave({ id, title, description, ingredients, image })
     onClose()
+  }
+
+  // simple formatter to insert markdown-like syntax
+  const applyFormat = (prefix = '', suffix = '') => {
+    const ta = descRef.current
+    if (!ta) return
+    const start = ta.selectionStart ?? 0
+    const end = ta.selectionEnd ?? 0
+    const before = description.slice(0, start)
+    const selected = description.slice(start, end)
+    const after = description.slice(end)
+    const next = `${before}${prefix}${selected || ''}${suffix}${after}`
+    setDescription(next)
+    // restore selection around inserted text
+    const cursor = start + prefix.length + (selected ? selected.length : 0)
+    requestAnimationFrame(() => {
+      ta.focus()
+      ta.setSelectionRange(cursor, cursor)
+    })
   }
 
   const parseItems = (text) =>
@@ -121,12 +141,12 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 grid place-items-center p-4" onClick={onClose}>
-      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-soft border border-slate-200" onClick={(e)=>e.stopPropagation()}>
+      <div className="w-full max-w-2xl max-h-[85vh] rounded-2xl bg-white shadow-soft border border-slate-200 overflow-hidden flex flex-col" onClick={(e)=>e.stopPropagation()}>
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <h3 className="text-lg font-semibold">Add Recipe</h3>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-700">✕</button>
         </div>
-        <form onSubmit={submit} className="p-4 grid gap-4">
+        <form onSubmit={submit} className="p-4 grid gap-4 overflow-y-auto flex-1">
           <div className="grid gap-2">
             <label className="text-sm font-medium">Title</label>
             <input value={title} onChange={e=>setTitle(e.target.value)}
@@ -135,10 +155,23 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
           </div>
           <div className="grid gap-2">
             <label className="text-sm font-medium">Description</label>
-            <textarea value={description} onChange={e=>setDescription(e.target.value)}
-                      rows={3}
-                      className="px-3 py-2 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-green-500"
-                      placeholder="Short cooking steps or notes"/>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => applyFormat('**', '**')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Bold">B</button>
+              <button type="button" onClick={() => applyFormat('*', '*')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Italic">I</button>
+              <button type="button" onClick={() => applyFormat('### ', '')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Heading">H3</button>
+              <button type="button" onClick={() => applyFormat('- ', '\n')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Bullet">•</button>
+              <button type="button" onClick={() => applyFormat('1. ', '\n')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Numbered">1.</button>
+              <button type="button" onClick={() => applyFormat('`', '`')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Inline code">{`</>`}</button>
+            </div>
+            <textarea
+              ref={descRef}
+              value={description}
+              onChange={e=>setDescription(e.target.value)}
+              rows={10}
+              className="px-3 py-2 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-green-500 resize-y min-h-48 leading-relaxed whitespace-pre-wrap"
+              placeholder="Add detailed steps, notes, tips... Use toolbar for simple formatting (bold, italic, lists)."
+            />
+            <div className="text-xs text-slate-500">Tip: Use Shift+Enter for line breaks. Supports simple markdown-like formatting via buttons.</div>
           </div>
           <div className="grid gap-2">
             <label className="text-sm font-medium">Image</label>

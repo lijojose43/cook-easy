@@ -14,6 +14,11 @@ export default function App() {
   const [showList, setShowList] = useState(false)
   const [selected, setSelected] = useState({})
   const [viewRecipe, setViewRecipe] = useState(null)
+  const [deferredPrompt, setDeferredPrompt] = useState(null)
+  const [isStandalone, setIsStandalone] = useState(false)
+  const [dismissedUntil, setDismissedUntil] = useState(() => {
+    try { return Number(localStorage.getItem('pwa_install_dismissed_until')) || 0 } catch { return 0 }
+  })
 
   // Admin mode toggle via secret query param (?admin=KEY). Default key 'chef' or VITE_ADMIN_KEY
   const isAdmin = useMemo(() => {
@@ -25,6 +30,58 @@ export default function App() {
       return false
     }
   }, [])
+
+  const snoozeInstallPrompt = (days = 7) => {
+    try {
+      const until = Date.now() + days * 24 * 60 * 60 * 1000
+      localStorage.setItem('pwa_install_dismissed_until', String(until))
+      setDismissedUntil(until)
+      setDeferredPrompt(null)
+    } catch {
+      setDeferredPrompt(null)
+    }
+  }
+
+  // PWA install prompt handling
+  React.useEffect(() => {
+    const checkStandalone = () => {
+      const mql = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches
+      const ios = window.navigator.standalone === true
+      setIsStandalone(Boolean(mql || ios))
+    }
+    checkStandalone()
+    const onBeforeInstall = (e) => {
+      // Prevent auto mini-infobar
+      e.preventDefault()
+      setDeferredPrompt(e)
+    }
+    const onAppInstalled = () => {
+      setDeferredPrompt(null)
+      setIsStandalone(true)
+      try { localStorage.removeItem('pwa_install_dismissed_until') } catch {}
+    }
+    window.addEventListener('beforeinstallprompt', onBeforeInstall)
+    window.addEventListener('appinstalled', onAppInstalled)
+    window.addEventListener('visibilitychange', checkStandalone)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onBeforeInstall)
+      window.removeEventListener('appinstalled', onAppInstalled)
+      window.removeEventListener('visibilitychange', checkStandalone)
+    }
+  }, [])
+
+  const promptInstall = async () => {
+    try {
+      if (!deferredPrompt) return
+      deferredPrompt.prompt()
+      const choice = await deferredPrompt.userChoice
+      if (choice && choice.outcome !== 'dismissed') {
+        setDeferredPrompt(null)
+      }
+    } catch {
+      // ignore
+    }
+  }
 
   // On first load, if no local data, try loading static seed from public/seed.json
   React.useEffect(() => {
@@ -265,6 +322,23 @@ export default function App() {
         <RecipeView recipe={viewRecipe} allRecipes={recipes} onOpenRecipe={setViewRecipe} onClose={() => setViewRecipe(null)} />
       )}
       {showList && <PurchaseList items={purchaseItems} onClose={() => setShowList(false)} onExport={exportTxt} />}
+      {(!isStandalone && deferredPrompt && Date.now() > dismissedUntil) && (
+        <div className="fixed inset-x-0 bottom-3 px-3 sm:px-4 z-50">
+          <div className="max-w-5xl mx-auto rounded-2xl border border-slate-200 bg-white/90 backdrop-blur shadow-soft p-3 sm:p-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <img src={(import.meta?.env?.BASE_URL || '/') + 'icons/icon-192.png'} alt="" className="w-8 h-8 rounded" />
+              <div>
+                <p className="text-sm font-medium text-slate-900">Install Easy Cook</p>
+                <p className="text-xs text-slate-600">Get quick access and offline support.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => snoozeInstallPrompt(7)} className="px-3 py-2 text-slate-600 hover:text-slate-800">Not now</button>
+              <button onClick={promptInstall} className="px-3 py-2 rounded-xl bg-orange-600 text-white hover:bg-orange-700 shadow-soft">Install</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -5,9 +5,11 @@ export default function Header({ isAdmin, onCreate, onGotoList, onExportAll, onI
     <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200">
       <div className="max-w-5xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-orange-500 grid place-items-center shadow-soft">
-            <span className="text-white font-bold">EC</span>
-          </div>
+          <img
+            src={(import.meta?.env?.BASE_URL || '/') + 'icons/icon-192.png'}
+            alt="Easy Cook"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl shadow-soft object-cover"
+          />
           <h1 className="text-lg sm:text-xl font-semibold text-slate-800">Easy Cook</h1>
         </div>
         <div className="flex flex-wrap gap-2 justify-end">

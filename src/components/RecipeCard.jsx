@@ -36,9 +36,28 @@ export default function RecipeCard({ recipe, isAdmin, selected, onToggle, onOpen
   return (
     <div className="rounded-2xl glass shadow-soft overflow-hidden border border-slate-200 h-full flex flex-col">
       {recipe.image && (
-        <button type="button" onClick={onOpen} className="block w-full group focus:outline-none">
-          <img src={recipe.image} alt={recipe.title} className="w-full h-40 sm:h-48 object-cover group-hover:opacity-95 transition" />
-        </button>
+        <div className="relative">
+          <button type="button" onClick={onOpen} className="block w-full group focus:outline-none">
+            <img src={recipe.image} alt={recipe.title} className="w-full h-40 sm:h-48 object-cover group-hover:opacity-95 transition" />
+          </button>
+          {recipe.videoUrl && (
+            <>
+              <div className="absolute top-1 right-1 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-bl from-black/60 via-black/30 to-transparent blur-md opacity-90 pointer-events-none z-10" />
+              <a
+                href={recipe.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e)=>e.stopPropagation()}
+                className="absolute top-2 right-2 inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-red-600 text-white shadow-soft hover:bg-red-700 ring-2 ring-white/70 z-20"
+                title="Watch on YouTube"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 sm:w-6 sm:h-6">
+                  <path d="M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 00.5 6.2 31.2 31.2 0 000 12a31.2 31.2 0 00.5 5.8 3 3 0 002.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 002.1-2.1A31.2 31.2 0 0024 12a31.2 31.2 0 00-.5-5.8zM9.75 15.02V8.98L15.5 12l-5.75 3.02z" />
+                </svg>
+              </a>
+            </>
+          )}
+        </div>
       )}
       <div className="p-3 sm:p-4 flex-1 flex flex-col">
         <div className="flex items-start justify-between gap-3">

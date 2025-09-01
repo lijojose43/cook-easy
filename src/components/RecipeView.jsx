@@ -88,16 +88,36 @@ export default function RecipeView({ recipe, allRecipes = [], onOpenRecipe, onCl
       .slice(0, 12) // limit
   }, [openMix, openMixItems, allRecipes, recipe.id])
   return (
-    <div className="fixed inset-0 bg-black/50 grid place-items-center p-4" onClick={onClose}>
-      <div className="w-full max-w-3xl max-h-[90vh] rounded-2xl bg-white shadow-soft border border-slate-200 overflow-hidden flex flex-col" onClick={(e)=>e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 overflow-auto" onClick={onClose}>
+      <div className="w-full max-w-3xl rounded-2xl bg-white shadow-soft border border-slate-200 flex flex-col" onClick={(e)=>e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-slate-200">
           <h3 className="text-lg font-semibold">{recipe.title}</h3>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-700">✕</button>
         </div>
-        {recipe.image && (
-          <img src={recipe.image} alt={recipe.title} className="w-full h-80 object-cover" />
-        )}
-        <div className="p-4 grid gap-4 overflow-y-auto flex-1">
+        <div className="relative">
+          {recipe.image && (
+            <img src={recipe.image} alt={recipe.title} className="w-full h-80 object-cover relative z-0" />
+          )}
+          {recipe.videoUrl && (
+            <>
+              {/* gradient backdrop for visibility */}
+              <div className="absolute top-1 right-1 w-16 h-16 rounded-full bg-gradient-to-bl from-black/60 via-black/30 to-transparent blur-md opacity-90 pointer-events-none z-10" />
+              <a
+                href={recipe.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute top-3 right-3 inline-flex items-center justify-center w-10 h-10 rounded-full bg-red-600 text-white shadow-soft hover:bg-red-700 ring-2 ring-white/70 z-20"
+                title="Watch on YouTube"
+              >
+                {/* YouTube icon */}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                  <path d="M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 00.5 6.2 31.2 31.2 0 000 12a31.2 31.2 0 00.5 5.8 3 3 0 002.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 002.1-2.1A31.2 31.2 0 0024 12a31.2 31.2 0 00-.5-5.8zM9.75 15.02V8.98L15.5 12l-5.75 3.02z" />
+                </svg>
+              </a>
+            </>
+          )}
+        </div>
+        <div className="p-4 grid gap-4">
           {mixNames.length > 0 && (
             <div>
               <h4 className="text-sm font-semibold text-slate-700 mb-2">Mixes</h4>

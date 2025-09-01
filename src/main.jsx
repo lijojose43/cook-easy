@@ -9,6 +9,7 @@ root.render(<App />)
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js').catch(console.error);
-  });
+    const swUrl = `${import.meta.env.BASE_URL}service-worker.js`
+    navigator.serviceWorker.register(swUrl).catch(console.error)
+  })
 }

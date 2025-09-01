@@ -10,6 +10,7 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
   const [ingredients, setIngredients] = useState([])
   const [customIng, setCustomIng] = useState('')
   const [image, setImage] = useState(null)
+  const [videoUrl, setVideoUrl] = useState('')
   const [recipeId, setRecipeId] = useState(null)
 
   // mixes state
@@ -28,6 +29,7 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
       setDescription(initialRecipe.description || '')
       setIngredients(initialRecipe.ingredients || [])
       setImage(initialRecipe.image || null)
+      setVideoUrl(initialRecipe.videoUrl || '')
     }
   }, [initialRecipe])
 
@@ -52,7 +54,7 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
     e.preventDefault()
     if (!title.trim()) return alert('Title is required')
     const id = recipeId || crypto.randomUUID()
-    onSave({ id, title, description, ingredients, image })
+    onSave({ id, title, description, ingredients, image, videoUrl: videoUrl.trim() })
     onClose()
   }
 
@@ -177,6 +179,18 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
             <label className="text-sm font-medium">Image</label>
             <input ref={fileRef} type="file" accept="image/*" onChange={handleImage} />
             {image && <img src={image} alt="preview" className="mt-2 w-full h-48 object-cover rounded-xl border" />}
+          </div>
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">YouTube Link (optional)</label>
+            <input
+              type="url"
+              inputMode="url"
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+              value={videoUrl}
+              onChange={e => setVideoUrl(e.target.value)}
+            />
+            <span className="text-xs text-slate-500">Paste a YouTube URL to show a quick access button in the recipe detail.</span>
           </div>
           <div className="grid gap-2">
             <label className="text-sm font-medium">Ingredients</label>

@@ -119,8 +119,8 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/10 grid place-items-center p-4">
-      <div className="w-full max-w-2xl rounded-2xl glass shadow-soft border border-slate-200">
+    <div className="fixed inset-0 modal-backdrop grid place-items-center p-4" onClick={onClose}>
+      <div className="w-full max-w-2xl rounded-2xl glass shadow-soft border border-slate-200" onClick={(e)=>e.stopPropagation()}>
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <h3 className="text-lg font-semibold">Add Recipe</h3>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-700">✕</button>

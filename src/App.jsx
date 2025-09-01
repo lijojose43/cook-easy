@@ -83,12 +83,6 @@ export default function App() {
         )}
       </main>
 
-      <button
-        onClick={() => setShowList(true)}
-        className="fixed bottom-6 right-6 rounded-full bg-sky-500 hover:bg-sky-600 text-white shadow-soft px-5 py-3">
-        Generate Purchase List
-      </button>
-
       {adding && <RecipeForm initialRecipe={editingRecipe} onSave={saveRecipe} onClose={() => { setAdding(false); setEditingRecipe(null) }} />}
       {viewRecipe && <RecipeView recipe={viewRecipe} onClose={() => setViewRecipe(null)} />}
       {showList && <PurchaseList items={purchaseItems} onClose={() => setShowList(false)} onExport={exportTxt} />}

@@ -1,6 +1,6 @@
 {
-  "name": "CookBook Planner",
-  "short_name": "CookBook",
+  "name": "Easy Cook",
+  "short_name": "Easy Cook",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

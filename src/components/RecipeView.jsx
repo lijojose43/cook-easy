@@ -3,7 +3,7 @@ import React from 'react'
 export default function RecipeView({ recipe, onClose }) {
   if (!recipe) return null
   return (
-    <div className="fixed inset-0 modal-backdrop grid place-items-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/10 grid place-items-center p-4" onClick={onClose}>
       <div className="w-full max-w-3xl rounded-2xl glass shadow-soft border border-slate-200 overflow-hidden" onClick={(e)=>e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-slate-200">
           <h3 className="text-lg font-semibold">{recipe.title}</h3>

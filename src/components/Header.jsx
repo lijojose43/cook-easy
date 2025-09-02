@@ -6,7 +6,7 @@ export default function Header({ isAdmin, onCreate, onGotoList, onExportAll, onI
       <div className="max-w-5xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <img
-            src={(import.meta?.env?.BASE_URL || '/') + 'icons/icon-192.png'}
+            src={`${import.meta.env.BASE_URL}icons/icon-192.png`}
             alt="Easy Cook"
             className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl shadow-soft object-cover"
           />

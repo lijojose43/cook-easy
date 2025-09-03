@@ -34,7 +34,7 @@ export default function RecipeCard({ recipe, isAdmin, selected, onToggle, onOpen
       .slice(0, 8)
   }, [openMix, openMixItems, allRecipes, recipe.id])
   return (
-    <div className="rounded-2xl glass shadow-soft overflow-hidden border border-slate-200 h-full flex flex-col">
+    <div className="rounded-2xl glass shadow-soft overflow-hidden border border-slate-200 dark:border-slate-700 h-full flex flex-col">
       {recipe.image && (
         <div className="relative">
           <button type="button" onClick={onOpen} className="block w-full group focus:outline-none">
@@ -62,8 +62,8 @@ export default function RecipeCard({ recipe, isAdmin, selected, onToggle, onOpen
       <div className="p-3 sm:p-4 flex-1 flex flex-col">
         <div className="flex items-start justify-between gap-3">
           <button type="button" onClick={onOpen} className="text-left flex-1 focus:outline-none">
-            <h3 className="text-base sm:text-lg font-semibold text-slate-900 hover:underline">{recipe.title}</h3>
-            <p className="text-sm text-slate-600 line-clamp-3 sm:line-clamp-2 mt-1">{recipe.description}</p>
+            <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 hover:underline">{recipe.title}</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-3 sm:line-clamp-2 mt-1">{recipe.description}</p>
           </button>
           <button
             type="button"
@@ -73,7 +73,7 @@ export default function RecipeCard({ recipe, isAdmin, selected, onToggle, onOpen
             className={`shrink-0 w-8 h-8 rounded-xl grid place-items-center border transition
               ${selected
                 ? 'bg-green-600 border-green-600 text-white shadow-soft'
-                : 'bg-white/70 border-slate-300 text-slate-600 hover:bg-slate-50'}
+                : 'bg-white/70 dark:bg-slate-800/70 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'}
             `}
             title={selected ? 'Selected' : 'Select'}
           >
@@ -93,7 +93,7 @@ export default function RecipeCard({ recipe, isAdmin, selected, onToggle, onOpen
         <div className="mt-2 sm:mt-3">
           {mixNames.length > 0 && (
             <div className="mb-3">
-              <h4 className="text-sm font-medium text-slate-700">Mixes</h4>
+              <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">Mixes</h4>
               <div className="flex flex-wrap gap-2 mt-2">
                 {mixNames.map((name, idx) => (
                   <button
@@ -110,7 +110,7 @@ export default function RecipeCard({ recipe, isAdmin, selected, onToggle, onOpen
               </div>
               {openMix && openMixItems.length > 0 && (
                 <div className="mt-2 ml-1">
-                  <div className="text-xs text-slate-600 mb-1">{openMix} items:</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">{openMix} items:</div>
                   <div className="flex flex-wrap gap-2">
                     {openMixItems.map((it, i) => (
                       <span key={i} className={`text-[11px] px-2 py-0.5 rounded-full border ${chipColorClasses(it)}`}>{it}</span>
@@ -118,14 +118,14 @@ export default function RecipeCard({ recipe, isAdmin, selected, onToggle, onOpen
                   </div>
                   {relatedRecipes.length > 0 && (
                     <div className="mt-3">
-                      <div className="text-xs text-slate-600 mb-1">Related recipes using these items:</div>
+                      <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">Related recipes using these items:</div>
                       <div className="flex flex-wrap gap-2">
                         {relatedRecipes.map(r => (
                           <button
                             key={r.id}
                             type="button"
                             onClick={() => (onOpenRecipe ? onOpenRecipe(r) : onOpen())}
-                            className="text-xs px-2 py-1 rounded-full border border-sky-200 text-sky-700 hover:bg-sky-50"
+                            className="text-xs px-2 py-1 rounded-full border border-sky-200 dark:border-sky-900 text-sky-700 dark:text-sky-300 hover:bg-sky-50 dark:hover:bg-sky-950"
                             title={`Open ${r.title}`}
                           >
                             {r.title}
@@ -138,7 +138,7 @@ export default function RecipeCard({ recipe, isAdmin, selected, onToggle, onOpen
               )}
             </div>
           )}
-          <h4 className="text-sm font-medium text-slate-700">Ingredients</h4>
+          <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">Ingredients</h4>
           <div className="flex flex-wrap gap-2 mt-2">
             {recipe.ingredients.map((ing, idx) => (
               <span key={idx} className={`text-xs px-2 py-1 rounded-full border ${chipColorClasses(ing)}`}>
@@ -151,7 +151,7 @@ export default function RecipeCard({ recipe, isAdmin, selected, onToggle, onOpen
           <div className="mt-auto pt-4 flex justify-end gap-2">
             <button
               onClick={onEdit}
-              className="p-2 rounded-xl border border-orange-300 text-orange-700 hover:bg-orange-50"
+              className="p-2 rounded-xl border border-orange-300 dark:border-orange-400/40 text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950/30"
               aria-label="Edit recipe"
               title="Edit"
             >
@@ -163,7 +163,7 @@ export default function RecipeCard({ recipe, isAdmin, selected, onToggle, onOpen
             </button>
             <button
               onClick={onDelete}
-              className="p-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50"
+              className="p-2 rounded-xl border border-red-200 dark:border-red-400/40 text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30"
               aria-label="Delete recipe"
               title="Delete"
             >

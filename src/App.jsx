@@ -16,6 +16,17 @@ export default function App() {
   const [viewRecipe, setViewRecipe] = useState(null)
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [isStandalone, setIsStandalone] = useState(false)
+  // theme: 'light' | 'dark'
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem('theme')
+      if (saved === 'dark' || saved === 'light') return saved
+    } catch {}
+    try {
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+      return prefersDark ? 'dark' : 'light'
+    } catch { return 'light' }
+  })
   const [dismissedUntil, setDismissedUntil] = useState(() => {
     try { return Number(localStorage.getItem('pwa_install_dismissed_until')) || 0 } catch { return 0 }
   })
@@ -30,6 +41,17 @@ export default function App() {
       return false
     }
   }, [])
+
+  // Apply theme to <html> and persist
+  React.useEffect(() => {
+    try {
+      const root = document.documentElement
+      if (theme === 'dark') root.classList.add('dark'); else root.classList.remove('dark')
+      localStorage.setItem('theme', theme)
+    } catch {}
+  }, [theme])
+
+  const toggleTheme = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'))
 
   const snoozeInstallPrompt = (days = 7) => {
     try {
@@ -291,6 +313,8 @@ export default function App() {
     <div className="min-h-screen">
       <Header
         isAdmin={isAdmin}
+        isDark={theme === 'dark'}
+        onToggleTheme={toggleTheme}
         onCreate={() => { if (isAdmin) { setEditingRecipe(null); setAdding(true) } else { alert('Admin only action') } }}
         onGotoList={() => setShowList(true)}
         onExportAll={isAdmin ? exportAll : undefined}

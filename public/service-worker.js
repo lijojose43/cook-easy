@@ -1,12 +1,12 @@
 
-const CACHE = 'cookbook-cache-v2';
+const CACHE = 'cookbook-cache-v3';
 const scopePath = self.registration?.scope ? new URL(self.registration.scope).pathname : '/'
 const toPath = (p) => new URL(p, self.registration?.scope || self.location).pathname
 const BASE = toPath('./') // e.g., '/cook-easy/' or '/'
 const ASSETS = [
   BASE,
   toPath('index.html'),
-  toPath('manifest.webmanifest'),
+  toPath('manifest.webmanifest?v=2'),
 ];
 
 self.addEventListener('install', (e) => {

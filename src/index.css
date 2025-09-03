@@ -12,6 +12,12 @@
   background: rgba(255,255,255,0.7);
 }
 
+/* Dark mode variant for glass panels */
+.dark .glass {
+  backdrop-filter: blur(8px);
+  background: rgba(2,6,23,0.6); /* slate-950 with transparency */
+}
+
 /* Global light food-themed background */
 html, body, #root {
   height: 100%;
@@ -25,4 +31,35 @@ body {
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
+  /* Prevent accidental horizontal scroll jank */
+  overflow-x: hidden;
+  touch-action: pan-y;
+}
+
+/* Dark mode background: solid dark surface without image for readability */
+.dark body {
+  background-image: none;
+  background-color: #0f172a; /* slate-900 */
+}
+
+/* On small screens, avoid background-attachment: fixed to reduce jank */
+@media (max-width: 768px) {
+  body {
+    background-attachment: scroll;
+    background-position: center top;
+  }
+}
+
+/* iOS Safari specific enhancement: disable fixed background to avoid rubber-banding glitches */
+@supports (-webkit-touch-callout: none) {
+  body {
+    background-attachment: scroll;
+  }
+}
+
+/* Tame edge overscroll bounce on mobile */
+html, body {
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none; /* prevent vertical rubber-banding */
+  -webkit-overflow-scrolling: touch; /* smooth momentum on iOS */
 }

@@ -8,7 +8,7 @@ export default function Header({ isAdmin, onCreate, onGotoList, onExportAll, onI
           <img
             src={`${import.meta.env.BASE_URL}icons/icon-192.png`}
             alt="Easy Cook"
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl shadow-soft object-cover"
+            className="w-8 h-8 sm:w-9 sm:h-9 shadow-soft object-cover"
           />
           <h1 className="text-lg sm:text-xl font-semibold text-slate-800">Easy Cook</h1>
         </div>

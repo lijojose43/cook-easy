@@ -85,8 +85,10 @@ export default function App() {
 
   // On first load, if no local data, try loading static seed from public/seed.json
   React.useEffect(() => {
-    const hasLocal = (recipes && recipes.length > 0)
-    if (hasLocal) return
+    const hasLocalRecipes = Array.isArray(recipes) && recipes.length > 0
+    let hasLocalMixes = false
+    try { hasLocalMixes = Array.isArray(loadMixes()) && loadMixes().length > 0 } catch { hasLocalMixes = false }
+    if (hasLocalRecipes || hasLocalMixes) return
     const seedUrl = (import.meta?.env?.BASE_URL || '/') + 'seed.json'
     ;(async () => {
       try {

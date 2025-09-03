@@ -142,13 +142,13 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 z-50" onClick={onClose}>
-      <div className="w-full max-w-2xl max-h-[85vh] rounded-2xl bg-white shadow-soft border border-slate-200 overflow-hidden flex flex-col" onClick={(e)=>e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 grid place-items-start sm:place-items-center p-3 sm:p-4 z-50 overflow-x-hidden" onClick={onClose}>
+      <div className="w-full max-w-full sm:max-w-2xl sm:max-h-[85vh] bg-white shadow-soft border border-slate-200 overflow-hidden overflow-x-hidden flex flex-col rounded-none sm:rounded-2xl" onClick={(e)=>e.stopPropagation()}>
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <h3 className="text-lg font-semibold">Add Recipe</h3>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-700">✕</button>
         </div>
-        <form onSubmit={submit} className="p-4 grid gap-4 overflow-y-auto flex-1">
+        <form onSubmit={submit} className="p-4 grid gap-4 overflow-y-auto overflow-x-hidden flex-1 min-w-0">
           <div className="grid gap-2">
             <label className="text-sm font-medium">Title</label>
             <input value={title} onChange={e=>setTitle(e.target.value)}
@@ -170,7 +170,7 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
               value={description}
               onChange={e=>setDescription(e.target.value)}
               rows={10}
-              className="px-3 py-2 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-green-500 resize-y min-h-48 leading-relaxed whitespace-pre-wrap"
+              className="w-full max-w-full px-3 py-2 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-green-500 resize-y min-h-48 leading-relaxed whitespace-pre-wrap"
               placeholder="Add detailed steps, notes, tips... Use toolbar for simple formatting (bold, italic, lists)."
             />
             <div className="text-xs text-slate-500">Tip: Use Shift+Enter for line breaks. Supports simple markdown-like formatting via buttons.</div>
@@ -186,7 +186,7 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
               type="url"
               inputMode="url"
               placeholder="https://www.youtube.com/watch?v=..."
-              className="px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full max-w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500"
               value={videoUrl}
               onChange={e => setVideoUrl(e.target.value)}
             />
@@ -202,15 +202,15 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
                 </span>
               ))}
             </div>
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-stretch flex-col sm:flex-row min-w-0">
               <input list="ing-list" placeholder="Type or pick…"
-                className="flex-1 px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full sm:flex-1 px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500 min-w-0"
                 onChange={(e)=>setCustomIng(e.target.value)} value={customIng} />
               <datalist id="ing-list">
                 {PREFILLED_INGREDIENTS.map(i => <option key={i} value={i} />)}
               </datalist>
               <button type="button" onClick={()=>{ addIngredient(customIng.trim()); setCustomIng(''); }}
-                      className="px-3 py-2 rounded-xl bg-green-600 text-white hover:bg-green-700">Add</button>
+                      className="w-full sm:w-auto px-3 py-2 rounded-xl bg-green-600 text-white hover:bg-green-700">Add</button>
             </div>
             <div className="max-h-36 overflow-auto border rounded-xl p-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
               {PREFILLED_INGREDIENTS.map(i => (
@@ -226,18 +226,18 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
           {/* Ingredient Mixes */}
           <div className="grid gap-2">
             <label className="text-sm font-medium">Ingredient Mixes</label>
-            <div className="flex gap-2 flex-col sm:flex-row">
+            <div className="flex gap-2 flex-col sm:flex-row min-w-0">
               <input
                 value={mixName}
                 onChange={e=>setMixName(e.target.value)}
                 placeholder="Mix name (e.g., Tadka)"
-                className="sm:w-48 px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full sm:w-48 px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500"
               />
               <input
                 value={mixItems}
                 onChange={e=>setMixItems(e.target.value)}
                 placeholder="Items, comma separated (e.g., Oil, Mustard Seeds, Curry Leaves)"
-                className="flex-1 px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="flex-1 w-full max-w-full min-w-0 px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500"
               />
               <button type="button" onClick={createMix}
                 className="px-3 py-2 rounded-xl bg-green-600 text-white hover:bg-green-700">Save Mix</button>
@@ -248,16 +248,16 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
                   <div key={mix.id} className="p-2 flex items-start justify-between gap-2">
                     <div className="flex-1">
                       {editMixId === mix.id ? (
-                        <div className="grid gap-2 sm:grid-cols-3">
+                        <div className="grid gap-2 sm:grid-cols-3 min-w-0">
                           <input
                             value={editMixName}
                             onChange={e=>setEditMixName(e.target.value)}
-                            className="px-2 py-1 rounded-lg border"
+                            className="w-full max-w-full px-2 py-1 rounded-lg border"
                           />
                           <input
                             value={editMixItems}
                             onChange={e=>setEditMixItems(e.target.value)}
-                            className="sm:col-span-2 px-2 py-1 rounded-lg border"
+                            className="sm:col-span-2 w-full max-w-full min-w-0 px-2 py-1 rounded-lg border"
                           />
                           <div className="sm:col-span-3 flex gap-2">
                             <button type="button" onClick={saveEditMix} className="px-3 py-1 rounded-lg bg-sky-500 text-white">Save</button>

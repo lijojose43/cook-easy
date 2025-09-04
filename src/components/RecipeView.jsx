@@ -7,6 +7,11 @@ export default function RecipeView({ recipe, allRecipes = [], onOpenRecipe, onCl
   // minimal markdown renderer (safe): escapes HTML, supports ###, bold, italic, code, lists
   const renderMarkdown = (input) => {
     if (!input) return ''
+    // If the input already contains HTML tags (e.g., inserted from the toolbar like <strong>, <em>, <h3>, etc.),
+    // render it as-is so the exact formatting is preserved.
+    // We detect generic HTML tags instead of just angle brackets to avoid false positives like "1 < 2".
+    const looksLikeHTML = /<\/?[a-z][^>]*>/i.test(input)
+    if (looksLikeHTML) return input
     // escape HTML first
     const esc = (s) => s
       .replaceAll('&', '&amp;')
@@ -167,7 +172,28 @@ export default function RecipeView({ recipe, allRecipes = [], onOpenRecipe, onCl
           )}
           <div>
             <h4 className="text-sm font-semibold text-slate-700 mb-2">Ingredients</h4>
-            {recipe.ingredients?.length ? (
+            {Array.isArray(recipe.ingredientDetails) && recipe.ingredientDetails.length > 0 ? (
+              <ul className="list-disc pl-6 space-y-1 text-slate-700">
+                {recipe.ingredientDetails.map((d, idx) => {
+                  const name = (d?.name ?? '').trim()
+                  const extraRaw = (d?.extra ?? '').trim()
+                  const full = (d?.full ?? '').trim()
+                  const showExtra = !!extraRaw && extraRaw.toLowerCase() !== name.toLowerCase()
+                  const primary = name || full
+                  return (
+                    <li key={idx} className="leading-relaxed">
+                      <span className="font-medium">{primary}</span>
+                      {showExtra ? (
+                        <>
+                          {' '}
+                          — <span className="text-slate-600">{extraRaw}</span>
+                        </>
+                      ) : null}
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : recipe.ingredients?.length ? (
               <div className="flex flex-wrap gap-2">
                 {recipe.ingredients.map((ing, idx) => (
                   <span key={idx} className={`text-xs px-2 py-1 rounded-full border ${chipColorClasses(ing)}`}>

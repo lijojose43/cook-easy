@@ -1,17 +1,19 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { chipColorClasses } from '../lib/colors'
-import { PREFILLED_INGREDIENTS } from '../lib/ingredients'
 import { loadMixes, saveMixes } from '../lib/storage'
 
 export default function RecipeForm({ initialRecipe, onSave, onClose }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [ingredients, setIngredients] = useState([])
-  const [customIng, setCustomIng] = useState('')
+  const [ingText, setIngText] = useState('')
   const [image, setImage] = useState(null)
   const [videoUrl, setVideoUrl] = useState('')
   const [recipeId, setRecipeId] = useState(null)
+  // Advanced mode + detailed storage
+  const [advancedIngMode, setAdvancedIngMode] = useState(true)
+  const [ingredientDetails, setIngredientDetails] = useState([]) // {full,name,extra}[]
 
   // mixes state
   const [mixes, setMixes] = useState(() => loadMixes())
@@ -27,19 +29,85 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
       setRecipeId(initialRecipe.id)
       setTitle(initialRecipe.title || '')
       setDescription(initialRecipe.description || '')
-      setIngredients(initialRecipe.ingredients || [])
+      const details = Array.isArray(initialRecipe.ingredientDetails) ? initialRecipe.ingredientDetails : []
+      if (details.length > 0) {
+        setAdvancedIngMode(true)
+        setIngredientDetails(details)
+        const names = details.map(d => (d?.name ?? '').trim()).filter(Boolean)
+        setIngredients(Array.from(new Set(names)))
+        const lines = details.map(d => (d?.full || `${(d?.name||'').trim()}${(d?.extra||'').trim() ? ` — ${(d?.extra||'').trim()}` : ''}`))
+        setIngText(lines.join('\n'))
+      } else {
+        const baseIngredients = (initialRecipe.ingredients || []).filter(Boolean)
+        setIngredients(baseIngredients)
+        if (advancedIngMode) {
+          const ds = baseIngredients.map(n => ({ full: n, name: n, extra: '' }))
+          setIngredientDetails(ds)
+          setIngText(ds.map(d => d.full).join('\n'))
+        } else {
+          setIngText(baseIngredients.join('\n'))
+        }
+      }
       setImage(initialRecipe.image || null)
       setVideoUrl(initialRecipe.videoUrl || '')
     }
   }, [initialRecipe])
 
+  // keep textarea text in sync depending on mode
+  useEffect(() => {
+    if (advancedIngMode) {
+      const lines = ingredientDetails.map(d => d.full || `${d.name}${d.extra ? ` — ${d.extra}` : ''}`)
+      setIngText(lines.join('\n'))
+    } else {
+      setIngText(ingredients.join('\n'))
+    }
+  }, [ingredients, ingredientDetails, advancedIngMode])
+
+  // extract only the name before a hyphen/dash (e.g., "Lemon – 2" -> "Lemon")
+  const extractName = (line) => {
+    if (!line) return ''
+    const part = String(line)
+      .split(/\s*[\-–—]\s*/, 1)[0] // split on hyphen, en dash, or em dash
+      .trim()
+    return part
+  }
+
+  // Parse a detailed ingredient line into {full, name, extra}
+  const parseDetailLine = (line) => {
+    const full = String(line || '').trim()
+    if (!full) return null
+    const [namePart, ...rest] = full.split(/\s*[\-–—]\s*/)
+    const name = (namePart || '').trim()
+    const extra = (rest.join(' — ') || '').trim()
+    return { full, name, extra }
+  }
+
   const addIngredient = (ing) => {
     if (!ing) return;
-    if (!ingredients.includes(ing)) setIngredients([...ingredients, ing])
+    const name = extractName(ing)
+    if (!name) return;
+    if (advancedIngMode) {
+      // add a detail with just the name if not existing
+      if (!ingredients.includes(name)) {
+        setIngredients(prev => [...prev, name])
+      }
+      setIngredientDetails(prev => {
+        const exists = prev.some(d => d.name.toLowerCase() === name.toLowerCase())
+        if (exists) return prev
+        return [...prev, { full: name, name, extra: '' }]
+      })
+    } else {
+      if (!ingredients.includes(name)) {
+        setIngredients([...ingredients, name])
+      }
+    }
   }
 
   const removeIngredient = (ing) => {
     setIngredients(ingredients.filter(i => i !== ing))
+    if (advancedIngMode) {
+      setIngredientDetails(prev => prev.filter(d => (d.name || '').trim() !== ing))
+    }
   }
 
   const handleImage = (e) => {
@@ -54,28 +122,44 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
     e.preventDefault()
     if (!title.trim()) return alert('Title is required')
     const id = recipeId || crypto.randomUUID()
-    onSave({ id, title, description, ingredients, image, videoUrl: videoUrl.trim() })
+    const payload = { id, title, description, ingredients, image, videoUrl: videoUrl.trim() }
+    if (advancedIngMode) payload.ingredientDetails = ingredientDetails
+    onSave(payload)
     onClose()
   }
 
-  // simple formatter to insert markdown-like syntax
-  const applyFormat = (prefix = '', suffix = '') => {
-    const ta = descRef.current
-    if (!ta) return
-    const start = ta.selectionStart ?? 0
-    const end = ta.selectionEnd ?? 0
-    const before = description.slice(0, start)
-    const selected = description.slice(start, end)
-    const after = description.slice(end)
-    const next = `${before}${prefix}${selected || ''}${suffix}${after}`
-    setDescription(next)
-    // restore selection around inserted text
-    const cursor = start + prefix.length + (selected ? selected.length : 0)
-    requestAnimationFrame(() => {
-      ta.focus()
-      ta.setSelectionRange(cursor, cursor)
-    })
+  // --- Rich Text Editor helpers (contentEditable) ---
+  // Basic sanitizer: remove script/style tags, event handler attributes, and javascript: URLs
+  const sanitizeHTML = (html) => {
+    try {
+      const wrapper = document.createElement('div')
+      wrapper.innerHTML = html || ''
+      // remove scripts and styles
+      wrapper.querySelectorAll('script, style').forEach(n => n.remove())
+      // remove on* attributes and javascript: URLs
+      const walk = (el) => {
+        for (const attr of Array.from(el.attributes || [])) {
+          const name = attr.name || ''
+          const value = (attr.value || '').trim()
+          if (name.toLowerCase().startsWith('on')) el.removeAttribute(name)
+          if ((name === 'href' || name === 'src') && /^javascript:/i.test(value)) el.removeAttribute(name)
+        }
+        for (const child of el.children || []) walk(child)
+      }
+      walk(wrapper)
+      return wrapper.innerHTML
+    } catch {
+      return html || ''
+    }
   }
+
+  const exec = (command, value = null) => {
+    document.execCommand(command, false, value)
+    const el = descRef.current
+    if (el) setDescription(sanitizeHTML(el.innerHTML))
+  }
+
+  const insertHTML = (html) => exec('insertHTML', html)
 
   const parseItems = (text) =>
     text
@@ -149,76 +233,77 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
           <button onClick={onClose} className="text-slate-500 hover:text-slate-700">✕</button>
         </div>
         <form onSubmit={submit} className="p-4 grid gap-4 overflow-y-auto overflow-x-hidden flex-1 min-w-0">
+          {/* Title */}
           <div className="grid gap-2">
             <label className="text-sm font-medium">Title</label>
             <input value={title} onChange={e=>setTitle(e.target.value)}
                    className="px-3 py-2 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-green-500"
                    placeholder="e.g., Paneer Butter Masala" />
           </div>
+
+          {/* Ingredients */}
           <div className="grid gap-2">
-            <label className="text-sm font-medium">Description</label>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => applyFormat('**', '**')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Bold">B</button>
-              <button type="button" onClick={() => applyFormat('*', '*')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Italic">I</button>
-              <button type="button" onClick={() => applyFormat('### ', '')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Heading">H3</button>
-              <button type="button" onClick={() => applyFormat('- ', '\n')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Bullet">•</button>
-              <button type="button" onClick={() => applyFormat('1. ', '\n')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Numbered">1.</button>
-              <button type="button" onClick={() => applyFormat('`', '`')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Inline code">{`</>`}</button>
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-sm font-medium">Ingredients</label>
+              <label className="flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={advancedIngMode}
+                  onChange={(e) => {
+                    const next = e.target.checked
+                    setAdvancedIngMode(next)
+                    if (next) {
+                      // entering advanced: build details from current text or ingredients
+                      const fromText = ingText.split(/\r?\n/).map(s => parseDetailLine(s)).filter(Boolean)
+                      if (fromText.length > 0) {
+                        setIngredientDetails(fromText)
+                        const names = Array.from(new Set(fromText.map(d => d.name).filter(Boolean)))
+                        setIngredients(names)
+                      } else {
+                        const ds = ingredients.map(n => ({ full: n, name: n, extra: '' }))
+                        setIngredientDetails(ds)
+                      }
+                    } else {
+                      // leaving advanced: collapse to names only
+                      setIngredientDetails([])
+                      const names = Array.from(new Set(ingText.split(/\r?\n/).map(s => extractName(s)).map(s => s.trim()).filter(Boolean)))
+                      setIngredients(names)
+                    }
+                  }}
+                />
+                Advanced mode
+              </label>
             </div>
             <textarea
-              ref={descRef}
-              value={description}
-              onChange={e=>setDescription(e.target.value)}
-              rows={10}
-              className="w-full max-w-full px-3 py-2 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-green-500 resize-y min-h-48 leading-relaxed whitespace-pre-wrap"
-              placeholder="Add detailed steps, notes, tips... Use toolbar for simple formatting (bold, italic, lists)."
+              value={ingText}
+              onChange={(e) => {
+                const raw = e.target.value
+                setIngText(raw)
+                if (advancedIngMode) {
+                  const details = raw.split(/\r?\n/).map(s => parseDetailLine(s)).filter(Boolean)
+                  setIngredientDetails(details)
+                  const names = Array.from(new Set(details.map(d => d.name).filter(Boolean)))
+                  setIngredients(names)
+                } else {
+                  const lines = raw.split(/\r?\n/).map(s => extractName(s)).map(s => s.trim()).filter(Boolean)
+                  const seen = new Set()
+                  const unique = []
+                  for (const n of lines) {
+                    if (!seen.has(n)) { seen.add(n); unique.push(n) }
+                  }
+                  setIngredients(unique)
+                }
+              }}
+              rows={5}
+              placeholder="Type or paste ingredients. Each line becomes a chip."
+              className="w-full max-w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500 resize-y"
             />
-            <div className="text-xs text-slate-500">Tip: Use Shift+Enter for line breaks. Supports simple markdown-like formatting via buttons.</div>
-          </div>
-          <div className="grid gap-2">
-            <label className="text-sm font-medium">Image</label>
-            <input ref={fileRef} type="file" accept="image/*" onChange={handleImage} />
-            {image && <img src={image} alt="preview" className="mt-2 w-full h-48 object-cover rounded-xl border" />}
-          </div>
-          <div className="grid gap-2">
-            <label className="text-sm font-medium">YouTube Link (optional)</label>
-            <input
-              type="url"
-              inputMode="url"
-              placeholder="https://www.youtube.com/watch?v=..."
-              className="w-full max-w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500"
-              value={videoUrl}
-              onChange={e => setVideoUrl(e.target.value)}
-            />
-            <span className="text-xs text-slate-500">Paste a YouTube URL to show a quick access button in the recipe detail.</span>
-          </div>
-          <div className="grid gap-2">
-            <label className="text-sm font-medium">Ingredients</label>
             <div className="flex flex-wrap gap-2">
               {ingredients.map(ing => (
                 <span key={ing} className={`text-xs px-2 py-1 rounded-full border inline-flex items-center gap-1 ${chipColorClasses(ing)}`}>
                   {ing}
                   <button type="button" onClick={()=>removeIngredient(ing)} className="ml-1 text-white/90 hover:text-white">✕</button>
                 </span>
-              ))}
-            </div>
-            <div className="flex gap-2 items-stretch flex-col sm:flex-row min-w-0">
-              <input list="ing-list" placeholder="Type or pick…"
-                className="w-full sm:flex-1 px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500 min-w-0"
-                onChange={(e)=>setCustomIng(e.target.value)} value={customIng} />
-              <datalist id="ing-list">
-                {PREFILLED_INGREDIENTS.map(i => <option key={i} value={i} />)}
-              </datalist>
-              <button type="button" onClick={()=>{ addIngredient(customIng.trim()); setCustomIng(''); }}
-                      className="w-full sm:w-auto px-3 py-2 rounded-xl bg-green-600 text-white hover:bg-green-700">Add</button>
-            </div>
-            <div className="max-h-36 overflow-auto border rounded-xl p-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {PREFILLED_INGREDIENTS.map(i => (
-                <button type="button" key={i}
-                  onClick={()=>addIngredient(i)}
-                  className="text-left text-sm px-2 py-1 rounded-lg border border-orange-200 hover:bg-orange-50 text-orange-800">
-                  + {i}
-                </button>
               ))}
             </div>
           </div>
@@ -339,6 +424,58 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Description */}
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">Description</label>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => exec('bold')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Bold">B</button>
+              <button type="button" onClick={() => exec('italic')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Italic">I</button>
+              <button type="button" onClick={() => exec('formatBlock', 'H3')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Heading">H3</button>
+              <button type="button" onClick={() => exec('insertUnorderedList')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Bullet list">•</button>
+              <button type="button" onClick={() => exec('insertOrderedList')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Numbered list">1.</button>
+              <button type="button" onClick={() => insertHTML('<code></code>')} className="px-2 py-1 text-xs rounded-lg border hover:bg-slate-50" title="Inline code">{`</>`}</button>
+            </div>
+            <div
+              ref={descRef}
+              contentEditable
+              suppressContentEditableWarning
+              onInput={(e) => setDescription(sanitizeHTML(e.currentTarget.innerHTML))}
+              onPaste={(e) => {
+                const clipboard = e.clipboardData
+                if (!clipboard) return
+                e.preventDefault()
+                const html = clipboard.getData('text/html') || clipboard.getData('text/plain')
+                document.execCommand('insertHTML', false, sanitizeHTML(html))
+                const el = descRef.current
+                if (el) setDescription(sanitizeHTML(el.innerHTML))
+              }}
+              className="w-full max-w-full px-3 py-2 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-green-500 min-h-48 leading-relaxed prose prose-sm"
+              dangerouslySetInnerHTML={{ __html: description || '' }}
+            />
+            <div className="text-xs text-slate-500">Tip: You can paste HTML directly. Content is stored as HTML and rendered in the card and modal.</div>
+          </div>
+
+          {/* Image */}
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">Image</label>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handleImage} />
+            {image && <img src={image} alt="preview" className="mt-2 w-full h-48 object-cover rounded-xl border" />}
+          </div>
+
+          {/* YouTube */}
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">YouTube Link (optional)</label>
+            <input
+              type="url"
+              inputMode="url"
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="w-full max-w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+              value={videoUrl}
+              onChange={e => setVideoUrl(e.target.value)}
+            />
+            <span className="text-xs text-slate-500">Paste a YouTube URL to show a quick access button in the recipe detail.</span>
           </div>
 
           <div className="flex justify-end gap-2">

@@ -63,7 +63,10 @@ export default function RecipeCard({ recipe, isAdmin, selected, onToggle, onOpen
         <div className="flex items-start justify-between gap-3">
           <button type="button" onClick={onOpen} className="text-left flex-1 focus:outline-none">
             <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 hover:underline">{recipe.title}</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-3 sm:line-clamp-2 mt-1">{recipe.description}</p>
+            <div
+              className="text-sm text-slate-600 dark:text-slate-300 line-clamp-3 sm:line-clamp-2 mt-1 [overflow-wrap:anywhere]"
+              dangerouslySetInnerHTML={{ __html: recipe.description || '' }}
+            />
           </button>
           <button
             type="button"

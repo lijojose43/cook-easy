@@ -122,7 +122,7 @@ export default function App() {
     }
   };
 
-  // On first load, if no local data, try loading static seed from public/seed.json
+  // On first load, if no local data, try loading static seed from public/recipe.json
   React.useEffect(() => {
     const hasLocalRecipes = Array.isArray(recipes) && recipes.length > 0;
     let hasLocalMixes = false;
@@ -132,29 +132,44 @@ export default function App() {
       hasLocalMixes = false;
     }
     if (hasLocalRecipes || hasLocalMixes) return;
-    const seedUrl =
-      (import.meta?.env?.BASE_URL || "/cook-easy/") + "recipe.json";
-    console.log(seedUrl);
+    const candidates = [];
+    try {
+      const base = (import.meta?.env?.BASE_URL || "/cook-easy/")
+        .replace(/\/\/+$/, "/");
+      candidates.push(`${base}recipe.json`);
+    } catch {}
+    // Try relative to current page location (helps in dev or if hosted under a subpath)
+    try {
+      const fromHere = new URL('recipe.json', window.location.href).toString();
+      candidates.unshift(fromHere);
+    } catch {}
+    // Fallback absolute paths
+    candidates.push("/cook-easy/recipe.json", "/recipe.json");
     (async () => {
-      try {
-        const res = await fetch(seedUrl, { cache: "no-cache" });
-        if (!res.ok) return;
-        const data = await res.json();
-        const seedRecipes = Array.from(
-          Array.isArray(data?.recipes) ? data.recipes : []
-        );
-        const seedMixes = Array.from(
-          Array.isArray(data?.mixes) ? data.mixes : []
-        );
-        if (seedRecipes.length > 0) {
-          saveRecipes(seedRecipes);
-          setRecipes(seedRecipes);
+      for (const url of candidates) {
+        try {
+          const res = await fetch(url, { cache: "no-store" });
+          if (!res.ok) continue;
+          const data = await res.json();
+          // Support either {recipes, mixes} object or a plain array of recipes
+          const seedRecipes = Array.isArray(data)
+            ? data
+            : Array.from(Array.isArray(data?.recipes) ? data.recipes : []);
+          const seedMixes = Array.from(
+            Array.isArray(data?.mixes) ? data.mixes : []
+          );
+          if (seedRecipes.length > 0) {
+            saveRecipes(seedRecipes);
+            setRecipes(seedRecipes);
+          }
+          if (seedMixes.length > 0) {
+            saveMixes(seedMixes);
+          }
+          if (seedRecipes.length > 0 || seedMixes.length > 0) return; // done
+        } catch (err) {
+          // try next candidate
+          try { console.warn('recipe.json load failed for', url, err); } catch {}
         }
-        if (seedMixes.length > 0) {
-          saveMixes(seedMixes);
-        }
-      } catch {
-        // ignore
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -197,21 +212,76 @@ export default function App() {
     });
   };
 
-  const purchaseItems = useMemo(() => {
-    const items = [];
-    for (const r of recipes) {
-      if (selected[r.id]) items.push(...r.ingredients);
+  // Parse quantity and unit from a freeform extra string, naive best-effort.
+  // Supports: decimals (1.5), commas (1,5), and unicode fractions (¼, ½, ¾), including mixed numbers (e.g., 1½ cup).
+  // Examples: "2 kg", "1.5 tsp", "3", "2 large", "½ cup", "1½ tbsp", "to taste" -> qty 1, unit "to taste"
+  const parseQtyUnit = (extra) => {
+    if (!extra || typeof extra !== 'string') return { qty: 1, unit: '' }
+    const s = extra.trim()
+    const fracMap = { '¼': 0.25, '½': 0.5, '¾': 0.75 }
+    // Match optional number (int/decimal with dot/comma), optional unicode fraction, then the rest as unit
+    const m = s.match(/^(\d+(?:[\.,]\d+)?)?\s*([¼½¾])?\s*([^\d].*)?$/)
+    if (m) {
+      const raw = (m[1] || '').replace(',', '.')
+      const base = raw ? Number(raw) : 0
+      const frac = m[2] ? (fracMap[m[2]] || 0) : 0
+      const total = base + frac
+      const unit = (m[3] || '').trim()
+      if (total > 0) return { qty: Math.round(total * 100) / 100, unit }
+      // If zero but has unit words, treat as descriptor-only
+      if (unit) return { qty: 1, unit }
     }
-    return items;
+    // Fallback: if no recognizable number, keep descriptor as unit with qty=1
+    return { qty: 1, unit: s }
+  }
+
+  const normalizeName = (name) => (name || '').trim()
+
+  const purchaseItems = useMemo(() => {
+    // aggregate as Map key: name||unit group
+    const agg = new Map()
+    const add = (name, extra) => {
+      const n = normalizeName(name)
+      if (!n) return
+      const { qty, unit } = parseQtyUnit(extra)
+      const key = `${n.toLowerCase()}|${unit.toLowerCase()}`
+      const cur = agg.get(key)
+      if (cur) {
+        cur.qty += qty
+      } else {
+        agg.set(key, { name: n, unit, qty })
+      }
+    }
+    for (const r of recipes) {
+      if (!selected[r.id]) continue
+      if (Array.isArray(r.ingredientDetails) && r.ingredientDetails.length > 0) {
+        for (const d of r.ingredientDetails) {
+          add(d?.name, d?.extra)
+        }
+      } else if (Array.isArray(r.ingredients)) {
+        for (const n of r.ingredients) add(n, '')
+      }
+    }
+    const list = Array.from(agg.values())
+    // round qty to 2 decimals
+    for (const it of list) {
+      if (typeof it.qty === 'number') it.qty = Math.round(it.qty * 100) / 100
+    }
+    return list.sort((a, b) => a.name.localeCompare(b.name))
   }, [recipes, selected]);
 
   const exportTxt = () => {
-    const content = Array.from(new Set(purchaseItems)).sort().join("\n");
-    const blob = new Blob([content], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "purchase-list.txt";
+    const lines = purchaseItems.map(it => {
+      const qtyStr = (it.qty && it.qty !== 1) ? `${it.qty} ` : ''
+      const unitStr = it.unit ? `${it.unit} ` : ''
+      return `• ${qtyStr}${unitStr}${it.name}`.trim()
+    })
+    const content = lines.join('\n')
+    const blob = new Blob([content], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'purchase-list.txt'
     a.click();
     URL.revokeObjectURL(url);
   };

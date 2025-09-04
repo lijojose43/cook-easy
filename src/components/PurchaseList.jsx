@@ -2,12 +2,19 @@
 import React from 'react'
 
 export default function PurchaseList({ items, onClose, onExport }) {
-  const sorted = Array.from(new Set(items)).sort((a,b) => a.localeCompare(b))
+  // items: [{ name, qty, unit }]
+  const sorted = Array.isArray(items)
+    ? [...items].sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+    : []
 
   const shareToWhatsApp = () => {
     try {
       const title = 'Purchase List'
-      const lines = sorted.map(i => `• ${i}`)
+      const lines = sorted.map(it => {
+        const qtyStr = (it.qty && it.qty !== 1) ? `${it.qty} ` : ''
+        const unitStr = it.unit ? `${it.unit} ` : ''
+        return `• ${qtyStr}${unitStr}${it.name}`.trim()
+      })
       const msg = [title, '', ...lines].join('\n')
       const url = `https://wa.me/?text=${encodeURIComponent(msg)}`
       window.open(url, '_blank', 'noopener,noreferrer')
@@ -28,7 +35,13 @@ export default function PurchaseList({ items, onClose, onExport }) {
             <p className="text-slate-600">No items selected yet.</p>
           ) : (
             <ul className="grid gap-2 list-disc pl-5">
-              {sorted.map((i, idx) => <li key={idx}>{i}</li>)}
+              {sorted.map((it, idx) => (
+                <li key={idx}>
+                  <span className="font-medium">{it.name}</span>
+                  {it.qty && it.qty !== 1 && <span> — {it.qty}{it.unit ? ` ${it.unit}` : ''}</span>}
+                  {!it.qty || it.qty === 1 ? (it.unit ? <span> — {it.unit}</span> : null) : null}
+                </li>
+              ))}
             </ul>
           )}
         </div>

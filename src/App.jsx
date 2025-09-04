@@ -35,6 +35,9 @@ export default function App() {
       return "light";
     }
   });
+
+  // Debug info for initial recipe.json loading
+  const [recipeLoadDebug, setRecipeLoadDebug] = useState({ active: false, attempts: [], done: false });
   const [dismissedUntil, setDismissedUntil] = useState(() => {
     try {
       return Number(localStorage.getItem("pwa_install_dismissed_until")) || 0;
@@ -146,10 +149,14 @@ export default function App() {
     // Fallback absolute paths
     candidates.push("/cook-easy/recipe.json", "/recipe.json");
     (async () => {
+      setRecipeLoadDebug({ active: true, attempts: [], done: false });
       for (const url of candidates) {
         try {
           const res = await fetch(url, { cache: "no-store" });
-          if (!res.ok) continue;
+          if (!res.ok) {
+            setRecipeLoadDebug((d) => ({ ...d, attempts: [...d.attempts, { url, ok: false, status: res.status }] }));
+            continue;
+          }
           const data = await res.json();
           // Support either {recipes, mixes} object or a plain array of recipes
           const seedRecipes = Array.isArray(data)
@@ -158,6 +165,7 @@ export default function App() {
           const seedMixes = Array.from(
             Array.isArray(data?.mixes) ? data.mixes : []
           );
+          setRecipeLoadDebug((d) => ({ ...d, attempts: [...d.attempts, { url, ok: true, status: 200, recipes: seedRecipes.length, mixes: seedMixes.length }] }));
           if (seedRecipes.length > 0) {
             saveRecipes(seedRecipes);
             setRecipes(seedRecipes);
@@ -169,8 +177,10 @@ export default function App() {
         } catch (err) {
           // try next candidate
           try { console.warn('recipe.json load failed for', url, err); } catch {}
+          setRecipeLoadDebug((d) => ({ ...d, attempts: [...d.attempts, { url, ok: false, error: String(err) }] }));
         }
       }
+      setRecipeLoadDebug((d) => ({ ...d, active: false, done: true }));
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -477,6 +487,19 @@ export default function App() {
         onImportAll={isAdmin ? importAll : undefined}
       />
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        {recipeLoadDebug && (recipeLoadDebug.active || (recipeLoadDebug.done && (recipeLoadDebug.attempts?.length ?? 0) > 0)) && (
+          <div className="mb-4 p-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 text-sm">
+            <div className="font-semibold mb-1">recipe.json loader debug</div>
+            <ul className="list-disc pl-5 space-y-1">
+              {recipeLoadDebug.attempts.map((a, i) => (
+                <li key={i}>
+                  <code>{a.url}</code> — {a.ok ? `OK (${a.recipes ?? 0} recipes, ${a.mixes ?? 0} mixes)` : (a.status ? `HTTP ${a.status}` : 'failed')}
+                  {a.error ? <span className="ml-2 opacity-70">{a.error}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {recipes.length === 0 ? (
           <div className="rounded-2xl border border-dashed p-10 text-center text-slate-600 glass">
             <p className="text-lg">No recipes yet.</p>

@@ -276,17 +276,42 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 grid place-items-start sm:place-items-center p-3 sm:p-4 z-50 overflow-x-hidden" onClick={onClose}>
       <div className="w-full max-w-full sm:max-w-2xl sm:max-h-[85vh] bg-white shadow-soft border border-slate-200 overflow-hidden overflow-x-hidden flex flex-col rounded-none sm:rounded-2xl" onClick={(e)=>e.stopPropagation()}>
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between gap-3">
           <h3 className="text-lg font-semibold">Add Recipe</h3>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-700">✕</button>
+          <div className="flex items-center gap-2">
+            <button type="submit" form="recipe-form" className="px-3 py-1.5 rounded-xl bg-green-600 text-white hover:bg-green-700">Save</button>
+          </div>
         </div>
-        <form onSubmit={submit} className="p-4 grid gap-4 overflow-y-auto overflow-x-hidden flex-1 min-w-0">
-          {/* Title */}
-          <div className="grid gap-2">
-            <label className="text-sm font-medium">Title</label>
-            <input value={title} onChange={e=>setTitle(e.target.value)}
-                   className="px-3 py-2 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-green-500"
-                   placeholder="e.g., Paneer Butter Masala" />
+        <form id="recipe-form" onSubmit={submit} className="p-4 grid gap-4 overflow-y-auto overflow-x-hidden flex-1 min-w-0">
+          {/* Title + Image (side-by-side on larger screens) */}
+          <div className="grid gap-4 sm:grid-cols-2 items-start">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Title</label>
+              <input value={title} onChange={e=>setTitle(e.target.value)}
+                     className="px-3 py-2 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+                     placeholder="e.g., Paneer Butter Masala" />
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Image</label>
+              {/* Modern icon trigger for file input */}
+              <input ref={fileRef} type="file" accept="image/*" onChange={handleImage} className="sr-only" />
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="inline-flex items-center justify-center w-11 h-11 rounded-full border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 shadow-sm"
+                  aria-label="Upload image"
+                  title="Upload image"
+                >
+                  {/* Upload icon */}
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 16V4m0 0-4 4m4-4 4 4M6 16v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-2" />
+                  </svg>
+                </button>
+                <span className="text-xs text-slate-500">Upload or replace the recipe image</span>
+              </div>
+              {image && <img src={image} alt="preview" className="mt-2 w-full h-48 object-cover rounded-xl border" />}
+            </div>
           </div>
 
           {/* Ingredients */}
@@ -505,12 +530,7 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
             <div className="text-xs text-slate-500">Tip: You can paste HTML directly. Content is stored as HTML and rendered in the card and modal.</div>
           </div>
 
-          {/* Image */}
-          <div className="grid gap-2">
-            <label className="text-sm font-medium">Image</label>
-            <input ref={fileRef} type="file" accept="image/*" onChange={handleImage} />
-            {image && <img src={image} alt="preview" className="mt-2 w-full h-48 object-cover rounded-xl border" />}
-          </div>
+          
 
           {/* YouTube */}
           <div className="grid gap-2">

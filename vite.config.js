@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/',
+  // For GitHub Pages under https://<user>.github.io/<repo>/, set base to '/<repo>/'
+  base: '/cook-easy/',
   build: { outDir: 'dist' }
 })

@@ -110,12 +110,60 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
     }
   }
 
+  // Image compression utility: resize to max dimension and encode to WebP (fallback JPEG)
+  const compressImageFile = async (file, options = {}) => {
+    const { maxWidth = 1280, maxHeight = 1280, quality = 0.75, preferWebP = true } = options
+    if (!file || !file.type?.startsWith('image/')) return null
+    const dataUrl = await new Promise((resolve, reject) => {
+      const fr = new FileReader()
+      fr.onload = () => resolve(fr.result)
+      fr.onerror = reject
+      fr.readAsDataURL(file)
+    })
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image()
+      i.onload = () => resolve(i)
+      i.onerror = reject
+      i.src = dataUrl
+    })
+    // compute target size
+    let { width, height } = img
+    const scale = Math.min(1, maxWidth / width || 1, maxHeight / height || 1)
+    const targetW = Math.max(1, Math.round(width * scale))
+    const targetH = Math.max(1, Math.round(height * scale))
+    const canvas = document.createElement('canvas')
+    canvas.width = targetW
+    canvas.height = targetH
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, 0, 0, targetW, targetH)
+    const tryMime = (mt) => {
+      try {
+        return canvas.toDataURL(mt, quality)
+      } catch {
+        return null
+      }
+    }
+    let out = null
+    if (preferWebP) out = tryMime('image/webp')
+    if (!out || out === 'data:,') out = tryMime('image/jpeg')
+    if (!out || out === 'data:,') out = canvas.toDataURL() // fallback PNG
+    return out
+  }
+
   const handleImage = (e) => {
     const file = e.target.files?.[0]
-    if (!file) return;
-    const reader = new FileReader()
-    reader.onload = () => setImage(reader.result)
-    reader.readAsDataURL(file)
+    if (!file) return
+    ;(async () => {
+      try {
+        const compressed = await compressImageFile(file, { maxWidth: 1280, maxHeight: 1280, quality: 0.75, preferWebP: true })
+        setImage(compressed || null)
+      } catch (err) {
+        console.error('Image compression failed, storing original', err)
+        const reader = new FileReader()
+        reader.onload = () => setImage(reader.result)
+        reader.readAsDataURL(file)
+      }
+    })()
   }
 
   const submit = (e) => {

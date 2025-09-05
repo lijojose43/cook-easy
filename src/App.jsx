@@ -271,7 +271,60 @@ export default function App() {
     return { qty: 1, unit: s };
   };
 
-  const normalizeName = (name) => (name || "").trim();
+  // Normalize unit strings to reduce duplicates (e.g., tsp vs teaspoons)
+  const normalizeUnit = (unitRaw) => {
+    const u = (unitRaw || "").trim().toLowerCase().replace(/\./g, "");
+    const map = {
+      tsp: "tsp",
+      tsps: "tsp",
+      teaspoon: "tsp",
+      teaspoons: "tsp",
+      tbsp: "tbsp",
+      tbsps: "tbsp",
+      tablespoon: "tbsp",
+      tablespoons: "tbsp",
+      cup: "cup",
+      cups: "cup",
+      kg: "kg",
+      kgs: "kg",
+      kilogram: "kg",
+      kilograms: "kg",
+      g: "g",
+      gram: "g",
+      grams: "g",
+      gms: "g",
+      mg: "mg",
+      ml: "ml",
+      l: "l",
+      litre: "l",
+      litres: "l",
+      liter: "l",
+      liters: "l",
+      piece: "pc",
+      pieces: "pc",
+      pc: "pc",
+      pcs: "pc",
+      packet: "pack",
+      packets: "pack",
+      pack: "pack",
+      packs: "pack",
+      pinch: "pinch",
+      pinches: "pinch",
+      to: "to taste", // allow mapping from split words
+      taste: "to taste",
+      "to taste": "to taste",
+    };
+    if (map[u]) return map[u];
+    // Collapse multi-word synonyms
+    if (/^to\s+taste$/.test(u)) return "to taste";
+    // Default: singularize simple trailing 's'
+    return u.endsWith("s") ? u.slice(0, -1) : u;
+  };
+
+  const normalizeName = (name) => {
+    const s = (name || "").trim().replace(/\s+/g, " ");
+    return s;
+  };
 
   const purchaseItems = useMemo(() => {
     // aggregate as Map key: name||unit group
@@ -280,12 +333,18 @@ export default function App() {
       const n = normalizeName(name);
       if (!n) return;
       const { qty, unit } = parseQtyUnit(extra);
-      const key = `${n.toLowerCase()}|${unit.toLowerCase()}`;
+      const unitNorm = normalizeUnit(unit);
+      const nameKey = n
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim()
+        .replace(/\s+/g, " ");
+      const key = `${nameKey}|${unitNorm}`;
       const cur = agg.get(key);
       if (cur) {
         cur.qty += qty;
       } else {
-        agg.set(key, { name: n, unit, qty });
+        agg.set(key, { name: n, unit: unitNorm, qty });
       }
     };
     for (const r of recipes) {
@@ -516,7 +575,8 @@ export default function App() {
         onImportAll={isAdmin ? importAll : undefined}
       />
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        {recipeLoadDebug &&
+        {isAdmin &&
+          recipeLoadDebug &&
           (recipeLoadDebug.active ||
             (recipeLoadDebug.done &&
               (recipeLoadDebug.attempts?.length ?? 0) > 0)) && (

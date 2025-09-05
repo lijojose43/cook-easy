@@ -37,7 +37,11 @@ export default function App() {
   });
 
   // Debug info for initial recipe.json loading
-  const [recipeLoadDebug, setRecipeLoadDebug] = useState({ active: false, attempts: [], done: false });
+  const [recipeLoadDebug, setRecipeLoadDebug] = useState({
+    active: false,
+    attempts: [],
+    done: false,
+  });
   const [dismissedUntil, setDismissedUntil] = useState(() => {
     try {
       return Number(localStorage.getItem("pwa_install_dismissed_until")) || 0;
@@ -137,13 +141,15 @@ export default function App() {
     if (hasLocalRecipes || hasLocalMixes) return;
     const candidates = [];
     try {
-      const base = (import.meta?.env?.BASE_URL || "/cook-easy/")
-        .replace(/\/\/+$/, "/");
+      const base = (import.meta?.env?.BASE_URL || "/cook-easy/").replace(
+        /\/\/+$/,
+        "/"
+      );
       candidates.push(`${base}recipe.json`);
     } catch {}
     // Try relative to current page location (helps in dev or if hosted under a subpath)
     try {
-      const fromHere = new URL('recipe.json', window.location.href).toString();
+      const fromHere = new URL("recipe.json", window.location.href).toString();
       candidates.unshift(fromHere);
     } catch {}
     // Fallback absolute paths
@@ -154,7 +160,10 @@ export default function App() {
         try {
           const res = await fetch(url, { cache: "no-store" });
           if (!res.ok) {
-            setRecipeLoadDebug((d) => ({ ...d, attempts: [...d.attempts, { url, ok: false, status: res.status }] }));
+            setRecipeLoadDebug((d) => ({
+              ...d,
+              attempts: [...d.attempts, { url, ok: false, status: res.status }],
+            }));
             continue;
           }
           const data = await res.json();
@@ -165,7 +174,19 @@ export default function App() {
           const seedMixes = Array.from(
             Array.isArray(data?.mixes) ? data.mixes : []
           );
-          setRecipeLoadDebug((d) => ({ ...d, attempts: [...d.attempts, { url, ok: true, status: 200, recipes: seedRecipes.length, mixes: seedMixes.length }] }));
+          setRecipeLoadDebug((d) => ({
+            ...d,
+            attempts: [
+              ...d.attempts,
+              {
+                url,
+                ok: true,
+                status: 200,
+                recipes: seedRecipes.length,
+                mixes: seedMixes.length,
+              },
+            ],
+          }));
           if (seedRecipes.length > 0) {
             saveRecipes(seedRecipes);
             setRecipes(seedRecipes);
@@ -176,8 +197,13 @@ export default function App() {
           if (seedRecipes.length > 0 || seedMixes.length > 0) return; // done
         } catch (err) {
           // try next candidate
-          try { console.warn('recipe.json load failed for', url, err); } catch {}
-          setRecipeLoadDebug((d) => ({ ...d, attempts: [...d.attempts, { url, ok: false, error: String(err) }] }));
+          try {
+            console.warn("recipe.json load failed for", url, err);
+          } catch {}
+          setRecipeLoadDebug((d) => ({
+            ...d,
+            attempts: [...d.attempts, { url, ok: false, error: String(err) }],
+          }));
         }
       }
       setRecipeLoadDebug((d) => ({ ...d, active: false, done: true }));
@@ -226,72 +252,75 @@ export default function App() {
   // Supports: decimals (1.5), commas (1,5), and unicode fractions (¼, ½, ¾), including mixed numbers (e.g., 1½ cup).
   // Examples: "2 kg", "1.5 tsp", "3", "2 large", "½ cup", "1½ tbsp", "to taste" -> qty 1, unit "to taste"
   const parseQtyUnit = (extra) => {
-    if (!extra || typeof extra !== 'string') return { qty: 1, unit: '' }
-    const s = extra.trim()
-    const fracMap = { '¼': 0.25, '½': 0.5, '¾': 0.75 }
+    if (!extra || typeof extra !== "string") return { qty: 1, unit: "" };
+    const s = extra.trim();
+    const fracMap = { "¼": 0.25, "½": 0.5, "¾": 0.75 };
     // Match optional number (int/decimal with dot/comma), optional unicode fraction, then the rest as unit
-    const m = s.match(/^(\d+(?:[\.,]\d+)?)?\s*([¼½¾])?\s*([^\d].*)?$/)
+    const m = s.match(/^(\d+(?:[\.,]\d+)?)?\s*([¼½¾])?\s*([^\d].*)?$/);
     if (m) {
-      const raw = (m[1] || '').replace(',', '.')
-      const base = raw ? Number(raw) : 0
-      const frac = m[2] ? (fracMap[m[2]] || 0) : 0
-      const total = base + frac
-      const unit = (m[3] || '').trim()
-      if (total > 0) return { qty: Math.round(total * 100) / 100, unit }
+      const raw = (m[1] || "").replace(",", ".");
+      const base = raw ? Number(raw) : 0;
+      const frac = m[2] ? fracMap[m[2]] || 0 : 0;
+      const total = base + frac;
+      const unit = (m[3] || "").trim();
+      if (total > 0) return { qty: Math.round(total * 100) / 100, unit };
       // If zero but has unit words, treat as descriptor-only
-      if (unit) return { qty: 1, unit }
+      if (unit) return { qty: 1, unit };
     }
     // Fallback: if no recognizable number, keep descriptor as unit with qty=1
-    return { qty: 1, unit: s }
-  }
+    return { qty: 1, unit: s };
+  };
 
-  const normalizeName = (name) => (name || '').trim()
+  const normalizeName = (name) => (name || "").trim();
 
   const purchaseItems = useMemo(() => {
     // aggregate as Map key: name||unit group
-    const agg = new Map()
+    const agg = new Map();
     const add = (name, extra) => {
-      const n = normalizeName(name)
-      if (!n) return
-      const { qty, unit } = parseQtyUnit(extra)
-      const key = `${n.toLowerCase()}|${unit.toLowerCase()}`
-      const cur = agg.get(key)
+      const n = normalizeName(name);
+      if (!n) return;
+      const { qty, unit } = parseQtyUnit(extra);
+      const key = `${n.toLowerCase()}|${unit.toLowerCase()}`;
+      const cur = agg.get(key);
       if (cur) {
-        cur.qty += qty
+        cur.qty += qty;
       } else {
-        agg.set(key, { name: n, unit, qty })
+        agg.set(key, { name: n, unit, qty });
       }
-    }
+    };
     for (const r of recipes) {
-      if (!selected[r.id]) continue
-      if (Array.isArray(r.ingredientDetails) && r.ingredientDetails.length > 0) {
+      if (!selected[r.id]) continue;
+      if (
+        Array.isArray(r.ingredientDetails) &&
+        r.ingredientDetails.length > 0
+      ) {
         for (const d of r.ingredientDetails) {
-          add(d?.name, d?.extra)
+          add(d?.name, d?.extra);
         }
       } else if (Array.isArray(r.ingredients)) {
-        for (const n of r.ingredients) add(n, '')
+        for (const n of r.ingredients) add(n, "");
       }
     }
-    const list = Array.from(agg.values())
+    const list = Array.from(agg.values());
     // round qty to 2 decimals
     for (const it of list) {
-      if (typeof it.qty === 'number') it.qty = Math.round(it.qty * 100) / 100
+      if (typeof it.qty === "number") it.qty = Math.round(it.qty * 100) / 100;
     }
-    return list.sort((a, b) => a.name.localeCompare(b.name))
+    return list.sort((a, b) => a.name.localeCompare(b.name));
   }, [recipes, selected]);
 
   const exportTxt = () => {
-    const lines = purchaseItems.map(it => {
-      const qtyStr = (it.qty && it.qty !== 1) ? `${it.qty} ` : ''
-      const unitStr = it.unit ? `${it.unit} ` : ''
-      return `• ${qtyStr}${unitStr}${it.name}`.trim()
-    })
-    const content = lines.join('\n')
-    const blob = new Blob([content], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'purchase-list.txt'
+    const lines = purchaseItems.map((it) => {
+      const qtyStr = it.qty && it.qty !== 1 ? `${it.qty} ` : "";
+      const unitStr = it.unit ? `${it.unit} ` : "";
+      return `• ${qtyStr}${unitStr}${it.name}`.trim();
+    });
+    const content = lines.join("\n");
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "purchase-list.txt";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -487,19 +516,29 @@ export default function App() {
         onImportAll={isAdmin ? importAll : undefined}
       />
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        {recipeLoadDebug && (recipeLoadDebug.active || (recipeLoadDebug.done && (recipeLoadDebug.attempts?.length ?? 0) > 0)) && (
-          <div className="mb-4 p-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 text-sm">
-            <div className="font-semibold mb-1">recipe.json loader debug</div>
-            <ul className="list-disc pl-5 space-y-1">
-              {recipeLoadDebug.attempts.map((a, i) => (
-                <li key={i}>
-                  <code>{a.url}</code> — {a.ok ? `OK (${a.recipes ?? 0} recipes, ${a.mixes ?? 0} mixes)` : (a.status ? `HTTP ${a.status}` : 'failed')}
-                  {a.error ? <span className="ml-2 opacity-70">{a.error}</span> : null}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {recipeLoadDebug &&
+          (recipeLoadDebug.active ||
+            (recipeLoadDebug.done &&
+              (recipeLoadDebug.attempts?.length ?? 0) > 0)) && (
+            <div className="mb-4 p-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 text-sm">
+              <div className="font-semibold mb-1">recipe.json loader debug</div>
+              <ul className="list-disc pl-5 space-y-1">
+                {recipeLoadDebug.attempts.map((a, i) => (
+                  <li key={i}>
+                    <code>{a.url}</code> —{" "}
+                    {a.ok
+                      ? `OK (${a.recipes ?? 0} recipes, ${a.mixes ?? 0} mixes)`
+                      : a.status
+                      ? `HTTP ${a.status}`
+                      : "failed"}
+                    {a.error ? (
+                      <span className="ml-2 opacity-70">{a.error}</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         {recipes.length === 0 ? (
           <div className="rounded-2xl border border-dashed p-10 text-center text-slate-600 glass">
             <p className="text-lg">No recipes yet.</p>

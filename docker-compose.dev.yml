@@ -1,0 +1,19 @@
+# Development compose: hot-reload Vite dev server inside container
+version: "3.8"
+services:
+  dev:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - node_modules:/app/node_modules
+    environment:
+      # Enable file-watching inside Docker on Linux/Windows
+      - CHOKIDAR_USEPOLLING=true
+    command: sh -c "npm ci && npm run dev -- --host"
+    ports:
+      - "5173:5173"
+    # Optional: expose for debugging if needed
+    # - "24678:24678"
+volumes:
+  node_modules:

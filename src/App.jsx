@@ -574,7 +574,7 @@ export default function App() {
         onExportAll={isAdmin ? exportAll : undefined}
         onImportAll={isAdmin ? importAll : undefined}
       />
-      <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      <main className="w-full max-w-none px-3 sm:px-4 py-4 sm:py-6">
         {isAdmin &&
           recipeLoadDebug &&
           (recipeLoadDebug.active ||
@@ -658,7 +658,7 @@ export default function App() {
       )}
       {!isStandalone && deferredPrompt && Date.now() > dismissedUntil && (
         <div className="fixed inset-x-0 bottom-3 px-3 sm:px-4 z-50">
-          <div className="max-w-5xl mx-auto rounded-2xl border border-slate-200 bg-white/90 backdrop-blur shadow-soft p-3 sm:p-4 flex items-center justify-between gap-3">
+          <div className="w-full max-w-none rounded-2xl border border-slate-200 bg-white/90 backdrop-blur shadow-soft p-3 sm:p-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <img
                 src={(import.meta?.env?.BASE_URL || "/") + "icons/icon-192.png"}

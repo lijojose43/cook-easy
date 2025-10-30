@@ -2,7 +2,7 @@ import React from "react";
 
 export default function Header({ isAdmin, onCreate, onGotoList, onExportAll, onImportAll, isDark, onToggleTheme }) {
   return (
-    <header className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-700">
+    <header className="sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
       <div className="w-full max-w-none px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <img

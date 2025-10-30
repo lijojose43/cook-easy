@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { loadMixes } from '../lib/storage'
 import { chipColorClasses } from '../lib/colors'
+import BottomSheet from './BottomSheet'
 
 export default function RecipeView({ recipe, allRecipes = [], onOpenRecipe, onClose }) {
   if (!recipe) return null
@@ -93,12 +94,13 @@ export default function RecipeView({ recipe, allRecipes = [], onOpenRecipe, onCl
       .slice(0, 12) // limit
   }, [openMix, openMixItems, allRecipes, recipe.id])
   return (
-    <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 overflow-auto z-50" onClick={onClose}>
-      <div className="w-full max-w-3xl rounded-2xl bg-white shadow-soft border border-slate-200 flex flex-col" onClick={(e)=>e.stopPropagation()}>
-        <div className="flex items-center justify-between p-4 border-b border-slate-200">
-          <h3 className="text-lg font-semibold">{recipe.title}</h3>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-700">✕</button>
-        </div>
+    <BottomSheet 
+      isOpen={true} 
+      onClose={onClose} 
+      title={recipe.title}
+      maxHeight="90vh"
+    >
+      <div className="flex flex-col h-full overflow-hidden">
         <div className="relative">
           {recipe.image && (
             <img src={recipe.image} alt={recipe.title} className="w-full h-80 object-cover relative z-0" />
@@ -122,7 +124,7 @@ export default function RecipeView({ recipe, allRecipes = [], onOpenRecipe, onCl
             </>
           )}
         </div>
-        <div className="p-4 grid gap-4">
+        <div className="p-4 overflow-y-auto flex-1 space-y-4">
           {mixNames.length > 0 && (
             <div>
               <h4 className="text-sm font-semibold text-slate-700 mb-2">Mixes</h4>
@@ -211,11 +213,11 @@ export default function RecipeView({ recipe, allRecipes = [], onOpenRecipe, onCl
               <div className="prose prose-sm max-w-none text-slate-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: renderMarkdown(recipe.description) }} />
             </div>
           )}
-          <div className="flex justify-end">
-            <button onClick={onClose} className="px-4 py-2 rounded-xl border border-orange-300 text-orange-700 hover:bg-orange-50">Close</button>
-          </div>
+        </div>
+        <div className="p-4 border-t flex justify-end">
+          <button onClick={onClose} className="px-4 py-2 rounded-xl border border-orange-300 text-orange-700 hover:bg-orange-50">Close</button>
         </div>
       </div>
-    </div>
+    </BottomSheet>
   )
 }

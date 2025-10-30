@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { chipColorClasses } from '../lib/colors'
 import { loadMixes, saveMixes } from '../lib/storage'
+import BottomSheet from './BottomSheet'
 
 export default function RecipeForm({ initialRecipe, onSave, onClose }) {
   const [title, setTitle] = useState('')
@@ -274,13 +275,15 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 grid place-items-start sm:place-items-center p-3 sm:p-4 z-50 overflow-x-hidden" onClick={onClose}>
-      <div className="w-full max-w-full sm:max-w-2xl sm:max-h-[85vh] bg-white shadow-soft border border-slate-200 overflow-hidden overflow-x-hidden flex flex-col rounded-none sm:rounded-2xl" onClick={(e)=>e.stopPropagation()}>
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between gap-3">
-          <h3 className="text-lg font-semibold">Add Recipe</h3>
-          <div className="flex items-center gap-2">
-            <button type="submit" form="recipe-form" className="px-3 py-1.5 rounded-xl bg-green-600 text-white hover:bg-green-700">Save</button>
-          </div>
+    <BottomSheet 
+      isOpen={true} 
+      onClose={onClose} 
+      title="Add Recipe"
+      maxHeight="95vh"
+    >
+      <div className="flex flex-col h-full">
+        <div className="p-4 border-b border-slate-200 flex items-center justify-end gap-2">
+          <button type="submit" form="recipe-form" className="px-3 py-1.5 rounded-xl bg-green-600 text-white hover:bg-green-700">Save</button>
         </div>
         <form id="recipe-form" onSubmit={submit} className="p-4 grid gap-4 overflow-y-auto overflow-x-hidden flex-1 min-w-0">
           {/* Title + Image (side-by-side on larger screens) */}
@@ -552,6 +555,6 @@ export default function RecipeForm({ initialRecipe, onSave, onClose }) {
           </div>
         </form>
       </div>
-    </div>
+    </BottomSheet>
   )
 }

@@ -4,7 +4,7 @@ pipeline {
     environment {
         EC2_USER = 'ubuntu'
         EC2_HOST = '65.0.45.25'
-        EC2_KEY = credentials('ec2-ssh-key')  // Jenkins credential ID
+        EC2_KEY = credentials('ec2-ssh-key')
         IMAGE_NAME = 'react-app'
         CONTAINER_NAME = 'react-container'
     }
@@ -12,13 +12,16 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
+                cleanWs()
                 git branch: 'main', url: 'https://github.com/lijojose43/cook-easy.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t ${IMAGE_NAME}:latest .'
+                dir("${env.WORKSPACE}") {
+                    sh 'docker build -t ${IMAGE_NAME}:latest .'
+                }
             }
         }
 
